@@ -1,25 +1,28 @@
 variable "name" {
   description = "Name  (e.g. `bastion` or `db`)"
+  type        = string
 }
 
 variable "namespace" {
   description = "Namespace (e.g. `cp` or `cloudposse`)"
+  type        = string
 }
 
 variable "stage" {
   description = "Stage (e.g. `prod`, `dev`, `staging`)"
+  type        = string
 }
 
 variable "attributes" {
-  type        = "list"
-  default     = []
   description = "Additional attributes (e.g. `policy` or `role`)"
+  type        = list(string)
+  default     = []
 }
 
 variable "tags" {
-  type        = "map"
-  default     = {}
   description = "Additional tags (e.g. `map('BusinessUnit','XYZ')`)"
+  type        = map(string)
+  default     = {}
 }
 
 variable "delimiter" {
@@ -28,13 +31,13 @@ variable "delimiter" {
 }
 
 variable "enabled" {
-  default     = "true"
   description = "Set to false to prevent the module from creating any resources"
+  default     = true
 }
 
 variable "dns_aliases_enabled" {
-  default     = "true"
   description = "Set to false to prevent dns records for aliases from being created"
+  default     = true
 }
 
 variable "acm_certificate_arn" {
@@ -43,9 +46,9 @@ variable "acm_certificate_arn" {
 }
 
 variable "aliases" {
-  type        = "list"
-  default     = []
   description = "List of aliases. CAUTION! Names MUSTN'T contain trailing `.`"
+  type        = list(string)
+  default     = []
 }
 
 variable "custom_error_response" {
@@ -53,7 +56,12 @@ variable "custom_error_response" {
   # https://www.terraform.io/docs/providers/aws/r/cloudfront_distribution.html#custom-error-response-arguments
   description = "(Optional) - List of one or more custom error response element maps"
 
-  type    = "list"
+  type = list(object({
+    error_caching_min_ttl = number
+    error_code            = number
+    response_code         = number
+    response_page_path    = string
+  }))
   default = []
 }
 
@@ -89,7 +97,7 @@ variable "origin_protocol_policy" {
 
 variable "origin_ssl_protocols" {
   description = "(Required) - The SSL/TLS protocols that you want CloudFront to use when communicating with your origin over HTTPS"
-  type        = "list"
+  type        = list(string)
   default     = ["TLSv1", "TLSv1.1", "TLSv1.2"]
 }
 
@@ -105,11 +113,11 @@ variable "origin_read_timeout" {
 
 variable "compress" {
   description = "(Optional) Whether you want CloudFront to automatically compress content for web requests that include Accept-Encoding: gzip in the request header (default: false)"
-  default     = "false"
+  default     = false
 }
 
 variable "is_ipv6_enabled" {
-  default     = "true"
+  default     = true
   description = "State of CloudFront IPv6"
 }
 
@@ -124,13 +132,14 @@ variable "comment" {
 }
 
 variable "log_include_cookies" {
-  default     = "false"
+  default     = false
   description = "Include cookies in access logs"
 }
 
 variable "log_prefix" {
-  default     = ""
   description = "Path of logs in S3 bucket"
+  type        = string
+  default     = ""
 }
 
 variable "log_standard_transition_days" {
@@ -149,13 +158,13 @@ variable "log_expiration_days" {
 }
 
 variable "forward_query_string" {
-  default     = "false"
   description = "Forward query strings to the origin that is associated with this cache behavior"
+  default     = false
 }
 
 variable "forward_headers" {
   description = "Specifies the Headers, if any, that you want CloudFront to vary upon for this cache behavior. Specify `*` to include all headers."
-  type        = "list"
+  type        = list(string)
   default     = []
 }
 
@@ -165,8 +174,8 @@ variable "forward_cookies" {
 }
 
 variable "forward_cookies_whitelisted_names" {
-  type        = "list"
   description = "List of forwarded cookie names"
+  type        = list(string)
   default     = []
 }
 
@@ -186,15 +195,15 @@ variable "viewer_protocol_policy" {
 }
 
 variable "allowed_methods" {
-  type        = "list"
-  default     = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
   description = "List of allowed methods (e.g. ` GET, PUT, POST, DELETE, HEAD`) for AWS CloudFront"
+  type        = list(string)
+  default     = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
 }
 
 variable "cached_methods" {
-  type        = "list"
-  default     = ["GET", "HEAD"]
   description = "List of cached methods (e.g. ` GET, PUT, POST, DELETE, HEAD`)"
+  type        = list(string)
+  default     = ["GET", "HEAD"]
 }
 
 variable "default_ttl" {
@@ -219,11 +228,11 @@ variable "geo_restriction_type" {
 }
 
 variable "geo_restriction_locations" {
-  type = "list"
+  description = "List of country codes for which  CloudFront either to distribute content (whitelist) or not distribute your content (blacklist)"
+  type        = list(string)
 
   # e.g. ["US", "CA", "GB", "DE"]
-  default     = []
-  description = "List of country codes for which  CloudFront either to distribute content (whitelist) or not distribute your content (blacklist)"
+  default = []
 }
 
 variable "parent_zone_id" {
@@ -237,7 +246,34 @@ variable "parent_zone_name" {
 }
 
 variable "cache_behavior" {
-  type        = "list"
   description = "An ordered list of cache behaviors resource for this distribution. List from top to bottom in order of precedence. The topmost cache behavior will have precedence 0."
-  default     = []
+  type = list(object({
+    allowed_methods           = list(string)
+    cached_methods            = list(string)
+    compress                  = string
+    default_ttl               = number
+    field_level_encryption_id = string
+    forwarded_values = object({
+      cookies = object({
+        forward           = string
+        whitelisted_names = list(string)
+      })
+      headers                 = list(string)
+      query_string            = bool
+      query_string_cache_keys = list(string)
+    })
+    lambda_function_association = list(object({
+      event_type   = string
+      lambda_arn   = string
+      include_body = bool
+    }))
+    max_ttl                = number
+    min_ttl                = number
+    path_pattern           = string
+    smooth_streaming       = string
+    target_origin_id       = string
+    trusted_signers        = list(string)
+    viewer_protocol_policy = string
+  }))
+  default = []
 }
